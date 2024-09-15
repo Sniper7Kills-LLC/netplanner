@@ -1,0 +1,27 @@
+{
+  "strict_scopes": false,
+  "length": {
+      "min": 1,
+      "max": 52
+  },
+  "types": [
+      "build",
+      "ci",
+      "docs",
+      "feat",
+      "fix",
+      "perf",
+      "refactor",
+      "revert",
+      "style",
+      "test",
+      "chore"
+  ],
+  "scopes": [
+      "core",
+      "components",
+      "layout",
+      "pages",
+      "utilities"
+  ]
+}

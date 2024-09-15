@@ -1,0 +1,75 @@
+#!/bin/sh
+config=.githooks/commit-msg.config.json
+
+# set variables
+strict_scopes=$(jq -r .strict_scopes $config)
+types=($(jq -r -c '.types[]' $config))
+scopes=($(jq -r -c '.scopes[]' $config))
+min_length=$(jq -r .length.min $config)
+max_length=$(jq -r .length.max $config)
+
+
+valid_types=$(echo "${types[@]}" | tr -d '\n\r' | tr ' ' '|')
+
+if [ $strict_scopes == true ]; then
+    valid_scopes=$(echo "${scopes[@]}" | tr -d '\n\r' | tr ' ' '|')
+else
+    valid_scopes="[[:alnum:]._-]+"
+fi
+
+
+regexp="^(${valid_types})(\(${valid_scopes}\))?(!)?: .{$min_length,$max_length}$"
+
+echo "regexp: $regexp"
+
+msg=$(head -1 $1)
+
+# Check if commit message matches the regular expression
+if [[ ! $msg =~ $regexp ]]; then
+
+    case $(uname | tr '[:upper:]' '[:lower:]') in
+        linux*|darwin*)
+            echo -e "\n\e[1m\e[31m[Conventional Commits check failed]\e[0m"
+            echo -e "------------------------"
+            echo -e "\e[1mFirst line should be of the following format:\e[0m"
+            echo -e "\e[1m\e[34m<type>(<scope>): <subject>\e[0m\n"
+
+            echo -e "\e[1mValid types:\e[0m \e[34m${types[@]}\033[0m"
+            if [ $strict_scopes == true ]; then
+                echo -e "\e[1mValid scopes:\e[0m \e[34m${scopes[@]}\033[0m"
+            fi
+            echo -e "\e[1mMin length (first line):\e[0m \e[34m$min_length\033[0m"
+            echo -e "\e[1mMax length (first line):\e[0m \e[34m$max_length\033[0m"
+
+            echo -e "\e[1mConventional Commits spec:\e[0m https://www.conventionalcommits.org/en/v1.0.0/#specification\033[0m\n"
+            exit 1
+            ;;
+        # darwin*)
+        #     echo -e "\n\e[1m\e[31m[macOS]\e[0m"
+        #     ;;
+        # msys*|mingw*)
+        #     echo -e "\n\e[1m\e[31m[Windows]\e[0m"
+        #     ;;
+        # *)
+        #     echo -e "\n\e[1m\e[31m[Unknown]\e[0m"
+        #     ;;
+    esac
+
+    echo -e "Error: Commit message format is invalid."
+    echo -e "First line should be of the following format:"
+    echo -e "\t<type>(<scope>): <subject>\n\n"
+
+    echo -e "Valid types:\n ${valid_types}\n"
+    if [ $strict_scopes == true ]; then
+        echo -e "Valid scopes:\n ${valid_scopes}\n"
+    fi
+    echo -e "Min length (first line): $min_length"
+    echo -e "Max length (first line): $max_length\n"
+
+    echo -e "Please make sure your commit message follows the Conventional Commits specification."
+    echo -e "For more information, see: https://www.conventionalcommits.org/en/v1.0.0/#specification\n"
+
+    echo -e "Regexp: $regexp"
+
+    exit 1
+fi
